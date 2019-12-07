@@ -1,0 +1,52 @@
+{
+  "name": "cloudwatch-front-logger",
+  "version": "0.0.1",
+  "description": "Save your browser console logs to AWS CloudWatch (Inspired by agea/console-cloud-watch)",
+  "main": "lib/index.js",
+  "module": "es/index.js",
+  "dependencies": {
+    "aws-sdk": "^2.585.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.7.5",
+    "@babel/core": "^7.7.5",
+    "@babel/plugin-proposal-class-properties": "^7.7.4",
+    "@babel/plugin-transform-regenerator": "^7.7.5",
+    "@babel/preset-env": "^7.7.6",
+    "@babel/preset-typescript": "^7.7.4",
+    "@types/jest": "^24.0.23",
+    "@types/node": "^12.12.14",
+    "@typescript-eslint/eslint-plugin": "^2.10.0",
+    "@typescript-eslint/parser": "^2.10.0",
+    "coveralls": "^3.0.9",
+    "eslint": "^6.7.2",
+    "eslint-config-prettier": "^6.7.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "jest": "^24.9.0",
+    "jest-date-mock": "^1.0.7",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^1.19.1",
+    "ts-jest": "^24.2.0",
+    "typescript": "^3.7.3"
+  },
+  "scripts": {
+    "check": "tsc",
+    "lint": "eslint {src,tests}/**/*.ts",
+    "lint:fix": "eslint {src,tests}/**/*.ts --fix",
+    "build:cjs": "BABEL_ENV=cjs babel src --out-dir lib --source-maps --extensions .ts",
+    "build:es": "BABEL_ENV=es babel src --out-dir es --extensions .ts",
+    "build": "run-p build:*",
+    "test": "jest",
+    "prepublishOnly": "git diff --no-ext-diff --quiet --exit-code src .gitignore package.json README.md LICENSE || (echo \"Please commit changes!\" && false) && npm test && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mpyw/cloudwatch-front-logger.git"
+  },
+  "author": "mpyw",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mpyw/cloudwatch-front-logger/issues"
+  },
+  "homepage": "https://github.com/mpyw/cloudwatch-front-logger#readme"
+}
