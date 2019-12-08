@@ -13,6 +13,7 @@ import {
   InstallOptions,
   ErrorInfo
 } from "./types";
+import { AWSError } from "aws-sdk";
 
 export default class Logger {
   protected static readonly namespace: string = "CloudWatchFrontLogger";
@@ -158,8 +159,8 @@ export default class Logger {
    * @param e    - Error object
    * @param info - Extra Error Info (Consider using "type" field)
    */
-  public async onError(e: Error, info?: ErrorInfo): Promise<void> {
-    if (!this.enabled) {
+  public async onError(e: any, info?: ErrorInfo): Promise<void> {
+    if (!Logger.isValidError(e) || !this.enabled) {
       return;
     }
 
@@ -174,7 +175,7 @@ export default class Logger {
 
     this.events.push({
       timestamp: new Date().getTime(),
-      message,
+      message
     });
   }
 
@@ -225,6 +226,7 @@ export default class Logger {
     } catch (e) {
       // Try to recover from InvalidSequenceTokenException error message
       if (
+        !Logger.isValidError<AWSError>(e) ||
         e.code !== "InvalidSequenceTokenException" ||
         !(match = e.message.match(/The next expected sequenceToken is: (\w+)/))
       ) {
@@ -314,7 +316,10 @@ export default class Logger {
       });
     } catch (e) {
       // Try to recover from ResourceAlreadyExistsException error
-      if (e.code !== "ResourceAlreadyExistsException") {
+      if (
+        !Logger.isValidError<AWSError>(e) ||
+        e.code !== "ResourceAlreadyExistsException"
+      ) {
         // Print error to original console and reset states
         this.getConsole().error(e);
         await this.refresh();
@@ -325,5 +330,9 @@ export default class Logger {
     // Cache fresh "logStreamName"
     await this.setCache("logStreamName", params.logStreamName);
     return params.logStreamName;
+  }
+
+  protected static isValidError<E = Error>(value: any): value is E {
+    return value && typeof value.message === "string";
   }
 }

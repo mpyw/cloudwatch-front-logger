@@ -13,7 +13,7 @@ export interface LogStreamNameResolver {
 
 // Format message string from Error
 export interface MessageFormatter {
-  (e: Error, info?: ErrorInfo): string|null|Promise<string|null>;
+  (e: Error, info?: ErrorInfo): string | null | Promise<string | null>;
 }
 export interface ErrorInfo {
   [key: string]: any;
