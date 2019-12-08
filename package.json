@@ -1,6 +1,6 @@
 {
   "name": "cloudwatch-front-logger",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Save your browser console logs to AWS CloudWatch (Inspired by agea/console-cloud-watch)",
   "main": "lib/index.js",
   "module": "es/index.js",
@@ -37,7 +37,7 @@
     "lint:fix": "eslint {src,tests}/**/*.ts --fix",
     "build:cjs": "BABEL_ENV=cjs babel src --out-dir lib --extensions .ts",
     "build:es": "BABEL_ENV=es babel src --out-dir es --extensions .ts",
-    "build:types": "tsc --out types/index.d.ts --emitDeclarationOnly",
+    "build:types": "tsc --outDir types/ --emitDeclarationOnly",
     "build": "run-p build:*",
     "test": "jest",
     "prepublishOnly": "git diff --no-ext-diff --quiet --exit-code src .gitignore package.json README.md LICENSE || (echo \"Please commit changes!\" && false) && npm test && npm run build"
