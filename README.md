@@ -122,13 +122,13 @@ logger.install({
       }
     }
 
-    return {
+    return JSON.stringify({
       message: e.message,
       timestamp: new Date().getTime(),
       userAgent: window.navigator.userAgent,
       stack,
       type,
-    }
+    })
   },
 })
 ```
