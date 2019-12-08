@@ -1,6 +1,6 @@
 {
   "name": "cloudwatch-front-logger",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Save your browser console logs to AWS CloudWatch (Inspired by agea/console-cloud-watch)",
   "main": "lib/index.js",
   "module": "es/index.js",

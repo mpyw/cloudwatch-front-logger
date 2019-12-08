@@ -127,7 +127,7 @@ logger.install({
       timestamp: new Date().getTime(),
       userAgent: window.navigator.userAgent,
       stack,
-      type,
+      ...info,
     })
   },
 })
