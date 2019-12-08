@@ -31,7 +31,7 @@ export default class Logger {
   protected console?: ConsoleInterface;
 
   protected events: InputLogEvents = [];
-  protected intervalId?: NodeJS.Timeout;
+  protected intervalId?: NodeJS.Timeout | number;
 
   /**
    * Constructor.
