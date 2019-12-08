@@ -3,10 +3,10 @@
     "target": "esnext",
     "module": "commonjs",
     "lib": ["dom"],
+    "sourceRoot": "src/",
     "declaration": true,
     "sourceMap": true,
     "moduleResolution": "node",
-    "noEmit": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "strict": true,
@@ -19,6 +19,6 @@
     "node_modules"
   ],
   "include": [
-    "**/*.ts"
+    "src/**/*.ts"
   ]
 }
