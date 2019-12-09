@@ -153,31 +153,30 @@ logger.install({
 
 ```jsx
 class LoggerComponent extends React.component {
-  state = {
-    e: null,
-  }
 
   componentDidCatch(e, info) {
-    this.setState({ e })
-    logger.onError(e, {
+    this.props.logger.onError(e, {
       ...info,
       type: 'react',
     })
   }
 
   render() {
-    if (this.state.e) {
-      return <div>Fatal Error: {this.state.e.message}</div>
-    }
     return this.props.children
   }
 }
 ```
 
+```jsx
+<LoggerComponent logger={logger}>
+  <App />
+</LoggerComponent>
+```
+
 ### Redux (Middleware)
 
 ```js
-const LoggerMiddleware = (store) => (next) => (action) => {
+const createLoggerMiddleware = (logger) => (store) => (next) => (action) => {
   try {
     return next(action)
   } catch (e) {
@@ -187,4 +186,11 @@ const LoggerMiddleware = (store) => (next) => (action) => {
     })
   }
 }
+```
+
+```js
+const store = createStore(
+  combineReducers(reducers),
+  applyMiddleware(createLoggerMiddleware(logger))
+)
 ```
