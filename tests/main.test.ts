@@ -131,14 +131,14 @@ describe("Creating logStream", (): void => {
   it("should recover from ResourceAlreadyExistsException", async (): Promise<
     void
   > => {
-    (logger as any).client.createLogStream = jest.fn((_, callback) => {
-      callback(
+    (logger as any).client.createLogStream = jest
+      .fn()
+      .mockRejectedValue(
         new DummyAWSError(
           "Duplicate LogStream",
           "ResourceAlreadyExistsException"
         )
       );
-    });
     const name = await (logger as any).getLogStreamName();
     expect(name).toBe("abc123");
     expect(await storage.getItem("CloudWatchFrontLogger:logStreamName")).toBe(
@@ -148,9 +148,11 @@ describe("Creating logStream", (): void => {
   });
 
   it("should halt when other error occurred", async (): Promise<void> => {
-    (logger as any).client.createLogStream = jest.fn((_, callback) => {
-      callback(new DummyAWSError("Something went wrong", "UnknownException"));
-    });
+    (logger as any).client.createLogStream = jest
+      .fn()
+      .mockRejectedValue(
+        new DummyAWSError("Something went wrong", "UnknownException")
+      );
     const name = await (logger as any).getLogStreamName();
     expect(name).toBeNull();
     expect(globalConsole.messages).toStrictEqual([
@@ -231,14 +233,15 @@ describe("Sending logs", (): void => {
     });
 
     await logger.onInterval();
-    (logger as any).client.putLogEvents = jest.fn((params, callback) => {
+    (logger as any).client.putLogEvents = jest.fn(params => {
       (logger as any).client.sink[
         `${params.logGroupName}/${params.logStreamName}`
       ].push(...params.logEvents);
-      callback(
+      return Promise.reject(
         new DummyAWSError(
-          "... The next expected sequenceToken is: SEQUENCE_TOKEN_123  ...",
-          "InvalidSequenceTokenException"
+          "... The next expected sequenceToken is  ...",
+          "InvalidSequenceTokenException",
+          "SEQUENCE_TOKEN_123"
         )
       );
     });

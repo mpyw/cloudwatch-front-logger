@@ -1,11 +1,15 @@
-import CloudWatchLogs, { SequenceToken } from "aws-sdk/clients/cloudwatchlogs";
 import {
   StorageInterface,
   ConsoleInterface,
-  ClientInterface,
-  Level
+  Level,
+  AWSError,
+  ClientInterface
 } from "../src/types";
-import { AWSError } from "aws-sdk";
+import {
+  CreateLogStreamRequest,
+  PutLogEventsCommandOutput,
+  PutLogEventsRequest
+} from "@aws-sdk/client-cloudwatch-logs";
 
 export class DummyStorage implements StorageInterface {
   public storage: { [key: string]: string } = {};
@@ -46,29 +50,21 @@ export class DummyConsole implements ConsoleInterface {
 
 export class DummyClient implements ClientInterface {
   public sink: { [key: string]: any[] } = {};
-  public sequenceToken: SequenceToken | null = null;
+  public sequenceToken: string | null = null;
 
-  public createLogStream(
-    params: CloudWatchLogs.CreateLogStreamRequest,
-    callback?: (err: DummyAWSError, data: {}) => void
-  ): any {
+  public async createLogStream(params: CreateLogStreamRequest): Promise<any> {
     this.sink[`${params.logGroupName}/${params.logStreamName}`] = [];
-    callback && callback(undefined as any, {});
+    return {};
   }
 
-  public putLogEvents(
-    params: CloudWatchLogs.PutLogEventsRequest,
-    callback?: (
-      err: DummyAWSError,
-      data: CloudWatchLogs.PutLogEventsResponse
-    ) => void
-  ): any {
+  public async putLogEvents(
+    params: PutLogEventsRequest
+  ): Promise<PutLogEventsCommandOutput> {
     this.sink[`${params.logGroupName}/${params.logStreamName}`].push(
-      ...params.logEvents
+      ...(params.logEvents ?? [])
     );
     this.sequenceToken = `${params.sequenceToken || `SEQUENCE_TOKEN_`}#`;
-    callback &&
-      callback(undefined as any, { nextSequenceToken: this.sequenceToken });
+    return { nextSequenceToken: this.sequenceToken, $metadata: {} };
   }
 }
 
@@ -89,16 +85,11 @@ export class DummyEventTarget implements EventTarget {
 }
 
 export class DummyAWSError extends Error implements AWSError {
-  constructor(message: string, public code: string) {
+  constructor(
+    message: string,
+    public name: string,
+    public expectedSequenceToken?: string
+  ) {
     super(message);
   }
-  public retryable = false;
-  public statusCode = 200;
-  public time: Date = new Date();
-  public hostname = "localhost";
-  public region = "ap-northeast-1";
-  public retryDelay = 0;
-  public requestId = "xxx";
-  public extendedRequestId = "xxx";
-  public cfId = "xxx";
 }

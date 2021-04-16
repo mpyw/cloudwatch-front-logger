@@ -1,19 +1,19 @@
-import CloudWatchLogs, {
-  InputLogEvents,
-  PutLogEventsRequest,
-  SequenceToken
-} from "aws-sdk/clients/cloudwatchlogs";
+import {
+  CloudWatchLogs,
+  InputLogEvent,
+  PutLogEventsRequest
+} from "@aws-sdk/client-cloudwatch-logs";
 import {
   Level,
-  ClientInterface,
   StorageInterface,
   ConsoleInterface,
   MessageFormatter,
   LogStreamNameResolver,
   InstallOptions,
-  ErrorInfo
+  ErrorInfo,
+  AWSError,
+  ClientInterface
 } from "./types";
-import { AWSError } from "aws-sdk";
 
 export default class Logger {
   protected static readonly namespace: string = "CloudWatchFrontLogger";
@@ -30,7 +30,7 @@ export default class Logger {
   protected storage?: StorageInterface;
   protected console?: ConsoleInterface;
 
-  protected events: InputLogEvents = [];
+  protected events: InputLogEvent[] = [];
   protected intervalId?: NodeJS.Timeout | number;
 
   /**
@@ -119,8 +119,10 @@ export default class Logger {
     eventTarget = window
   }: InstallOptions = {}): void {
     this.client = new Ctor({
-      accessKeyId: this.accessKeyId,
-      secretAccessKey: this.secretAccessKey,
+      credentials: {
+        accessKeyId: this.accessKeyId,
+        secretAccessKey: this.secretAccessKey
+      },
       region: this.region
     });
     this.logStreamNameResolver = logStreamNameResolver;
@@ -211,42 +213,39 @@ export default class Logger {
       ...(sequenceToken ? { sequenceToken } : undefined)
     };
 
-    let nextSequenceToken: SequenceToken | undefined = undefined,
-      match: RegExpMatchArray | null = null;
+    let nextSequenceToken: string | undefined = undefined;
+    let needsRetry = false;
 
     try {
       // Run request to send events and retrieve fresh "nextSequenceToken"
-      ({ nextSequenceToken = undefined } = await new Promise(
-        (resolve, reject) => {
-          this.getClient().putLogEvents(params, (err, data) =>
-            err ? reject(err) : resolve(data)
-          );
-        }
+      ({ nextSequenceToken = undefined } = await this.getClient().putLogEvents(
+        params
       ));
     } catch (e) {
       // Try to recover from InvalidSequenceTokenException error message
       if (
         !Logger.isValidError<AWSError>(e) ||
-        e.code !== "InvalidSequenceTokenException" ||
-        !(match = e.message.match(/The next expected sequenceToken is: (\w+)/))
+        (e.name !== "DataAlreadyAcceptedException" &&
+          e.name !== "InvalidSequenceTokenException") ||
+        !e.expectedSequenceToken
       ) {
         // Print error to original console and reset states
         this.getConsole().error(e);
         await this.refresh();
         return;
       }
+      // Recover from InvalidSequenceTokenException error message
+      nextSequenceToken = e.expectedSequenceToken;
+      needsRetry = e.name !== "DataAlreadyAcceptedException";
     }
 
-    // Recover from InvalidSequenceTokenException error message
-    if (match) {
-      nextSequenceToken = match[1];
-    }
     // Cache fresh "nextSequenceToken"
     if (nextSequenceToken) {
       await this.setCache("sequenceToken", nextSequenceToken);
     }
+
     // Immediately retry after recovery
-    if (match) {
+    if (needsRetry) {
       this.events.push(...pendingEvents);
       setTimeout(this.onInterval, 0);
     }
@@ -309,16 +308,12 @@ export default class Logger {
 
     try {
       // Run request to create a new logStream
-      await new Promise((resolve, reject) => {
-        this.getClient().createLogStream(params, (err, data) =>
-          err ? reject(err) : resolve(data)
-        );
-      });
+      await this.getClient().createLogStream(params);
     } catch (e) {
       // Try to recover from ResourceAlreadyExistsException error
       if (
         !Logger.isValidError<AWSError>(e) ||
-        e.code !== "ResourceAlreadyExistsException"
+        e.name !== "ResourceAlreadyExistsException"
       ) {
         // Print error to original console and reset states
         this.getConsole().error(e);
