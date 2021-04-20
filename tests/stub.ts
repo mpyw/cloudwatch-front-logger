@@ -6,9 +6,10 @@ import {
   ClientInterface
 } from "../src/types";
 import {
-  CreateLogStreamRequest,
+  CreateLogStreamCommand,
   PutLogEventsCommandOutput,
-  PutLogEventsRequest
+  PutLogEventsCommand,
+  CreateLogStreamCommandOutput
 } from "@aws-sdk/client-cloudwatch-logs";
 
 export class DummyStorage implements StorageInterface {
@@ -52,19 +53,32 @@ export class DummyClient implements ClientInterface {
   public sink: { [key: string]: any[] } = {};
   public sequenceToken: string | null = null;
 
-  public async createLogStream(params: CreateLogStreamRequest): Promise<any> {
-    this.sink[`${params.logGroupName}/${params.logStreamName}`] = [];
-    return {};
-  }
+  public async send(
+    command: CreateLogStreamCommand
+  ): Promise<CreateLogStreamCommandOutput>;
+  public async send(
+    command: PutLogEventsCommand
+  ): Promise<PutLogEventsCommandOutput>;
+  public async send(
+    command: CreateLogStreamCommand | PutLogEventsCommand
+  ): Promise<CreateLogStreamCommandOutput | PutLogEventsCommandOutput> {
+    if (command instanceof CreateLogStreamCommand) {
+      this.sink[
+        `${command.input.logGroupName}/${command.input.logStreamName}`
+      ] = [];
+      return { $metadata: {} };
+    }
 
-  public async putLogEvents(
-    params: PutLogEventsRequest
-  ): Promise<PutLogEventsCommandOutput> {
-    this.sink[`${params.logGroupName}/${params.logStreamName}`].push(
-      ...(params.logEvents ?? [])
-    );
-    this.sequenceToken = `${params.sequenceToken || `SEQUENCE_TOKEN_`}#`;
-    return { nextSequenceToken: this.sequenceToken, $metadata: {} };
+    if (command instanceof PutLogEventsCommand) {
+      this.sink[
+        `${command.input.logGroupName}/${command.input.logStreamName}`
+      ].push(...(command.input.logEvents ?? []));
+      this.sequenceToken = `${command.input.sequenceToken ||
+        `SEQUENCE_TOKEN_`}#`;
+      return { nextSequenceToken: this.sequenceToken, $metadata: {} };
+    }
+
+    throw new Error("Unsupported stub command");
   }
 }
 

@@ -1,5 +1,5 @@
 import {
-  CloudWatchLogs,
+  CloudWatchLogsClient,
   CloudWatchLogsClientConfig
 } from "@aws-sdk/client-cloudwatch-logs";
 
@@ -50,8 +50,7 @@ export interface ClientConstructor {
   new (options: CloudWatchLogsClientConfig): ClientInterface;
 }
 export interface ClientInterface {
-  createLogStream: CloudWatchLogs["createLogStream"];
-  putLogEvents: CloudWatchLogs["putLogEvents"];
+  send: CloudWatchLogsClient["send"];
 }
 
 export interface AWSError extends Error {

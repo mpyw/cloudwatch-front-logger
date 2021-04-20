@@ -1,3 +1,4 @@
+import { PutLogEventsCommand } from "@aws-sdk/client-cloudwatch-logs";
 import { advanceTo } from "jest-date-mock";
 import { Logger } from "../src";
 
@@ -77,7 +78,7 @@ describe("Collecting errors", (): void => {
     ]);
   });
 
-  it("should recive from custom trigger", async (): Promise<void> => {
+  it("should receive from custom trigger", async (): Promise<void> => {
     await logger.onError(new Error("Something went wrong"), { type: "custom" });
     expect((logger as any).events).toStrictEqual([
       {
@@ -131,7 +132,7 @@ describe("Creating logStream", (): void => {
   it("should recover from ResourceAlreadyExistsException", async (): Promise<
     void
   > => {
-    (logger as any).client.createLogStream = jest
+    (logger as any).client.send = jest
       .fn()
       .mockRejectedValue(
         new DummyAWSError(
@@ -148,7 +149,7 @@ describe("Creating logStream", (): void => {
   });
 
   it("should halt when other error occurred", async (): Promise<void> => {
-    (logger as any).client.createLogStream = jest
+    (logger as any).client.send = jest
       .fn()
       .mockRejectedValue(
         new DummyAWSError("Something went wrong", "UnknownException")
@@ -233,10 +234,14 @@ describe("Sending logs", (): void => {
     });
 
     await logger.onInterval();
-    (logger as any).client.putLogEvents = jest.fn(params => {
+    const originalSend = (logger as any).client.send;
+    (logger as any).client.send = jest.fn(command => {
+      if (!(command instanceof PutLogEventsCommand)) {
+        return originalSend.call(logger, command);
+      }
       (logger as any).client.sink[
-        `${params.logGroupName}/${params.logStreamName}`
-      ].push(...params.logEvents);
+        `${command.input.logGroupName}/${command.input.logStreamName}`
+      ].push(...(command.input?.logEvents ?? []));
       return Promise.reject(
         new DummyAWSError(
           "... The next expected sequenceToken is  ...",
@@ -279,11 +284,17 @@ describe("Sending logs", (): void => {
     });
 
     await logger.onInterval();
-    (logger as any).client.putLogEvents = jest.fn((params, callback) => {
+
+    const originalSend = (logger as any).client.send;
+    (logger as any).client.send = jest.fn(command => {
+      if (!(command instanceof PutLogEventsCommand)) {
+        return originalSend.call(logger, command);
+      }
+
       (logger as any).client.sink[
-        `${params.logGroupName}/${params.logStreamName}`
-      ].push(...params.logEvents);
-      callback(
+        `${command.input.logGroupName}/${command.input.logStreamName}`
+      ].push(...(command.input?.logEvents ?? []));
+      return Promise.reject(
         new DummyAWSError(
           "... The next expected sequenceToken is: ?????  ...",
           "InvalidSequenceTokenException"

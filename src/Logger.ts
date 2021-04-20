@@ -1,7 +1,8 @@
 import {
-  CloudWatchLogs,
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
   InputLogEvent,
-  PutLogEventsRequest
+  PutLogEventsCommand
 } from "@aws-sdk/client-cloudwatch-logs";
 import {
   Level,
@@ -113,7 +114,7 @@ export default class Logger {
   public install({
     logStreamNameResolver,
     messageFormatter,
-    ClientConstructor: Ctor = CloudWatchLogs,
+    ClientConstructor: Ctor = CloudWatchLogsClient,
     storage = localStorage,
     console: globalConsole = console,
     eventTarget = window
@@ -206,20 +207,20 @@ export default class Logger {
 
     // Build parameters for PutLogEvents endpoint
     //   c.f. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
-    const params: PutLogEventsRequest = {
+    const command = new PutLogEventsCommand({
       logEvents: pendingEvents,
       logGroupName: this.logGroupName,
       logStreamName: logStreamName,
       ...(sequenceToken ? { sequenceToken } : undefined)
-    };
+    });
 
     let nextSequenceToken: string | undefined = undefined;
     let needsRetry = false;
 
     try {
       // Run request to send events and retrieve fresh "nextSequenceToken"
-      ({ nextSequenceToken = undefined } = await this.getClient().putLogEvents(
-        params
+      ({ nextSequenceToken = undefined } = await this.getClient().send(
+        command
       ));
     } catch (e) {
       // Try to recover from InvalidSequenceTokenException error message
@@ -299,16 +300,17 @@ export default class Logger {
 
     // Build parameters for CreateLogStream endpoint
     //   c.f. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogStream.html
-    const params = {
+    const logStreamName =
+      (this.logStreamNameResolver && (await this.logStreamNameResolver())) || // Resolve for current user (e.g. Canvas Fingerprint)
+      Logger.defaultLogStreamName; // "anonymous"
+    const createLogStreamCommand = new CreateLogStreamCommand({
       logGroupName: this.logGroupName,
-      logStreamName:
-        (this.logStreamNameResolver && (await this.logStreamNameResolver())) || // Resolve for current user (e.g. Canvas Fingerprint)
-        Logger.defaultLogStreamName // "anonymous"
-    };
+      logStreamName
+    });
 
     try {
       // Run request to create a new logStream
-      await this.getClient().createLogStream(params);
+      await this.getClient().send(createLogStreamCommand);
     } catch (e) {
       // Try to recover from ResourceAlreadyExistsException error
       if (
@@ -323,8 +325,8 @@ export default class Logger {
     }
 
     // Cache fresh "logStreamName"
-    await this.setCache("logStreamName", params.logStreamName);
-    return params.logStreamName;
+    await this.setCache("logStreamName", logStreamName);
+    return logStreamName;
   }
 
   protected static isValidError<E = Error>(value: any): value is E {
