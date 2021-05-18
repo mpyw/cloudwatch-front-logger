@@ -1,11 +1,16 @@
-import CloudWatchLogs, { SequenceToken } from "aws-sdk/clients/cloudwatchlogs";
 import {
   StorageInterface,
   ConsoleInterface,
-  ClientInterface,
-  Level
+  Level,
+  AWSError,
+  ClientInterface
 } from "../src/types";
-import { AWSError } from "aws-sdk";
+import {
+  CreateLogStreamCommand,
+  PutLogEventsCommandOutput,
+  PutLogEventsCommand,
+  CreateLogStreamCommandOutput
+} from "@aws-sdk/client-cloudwatch-logs";
 
 export class DummyStorage implements StorageInterface {
   public storage: { [key: string]: string } = {};
@@ -46,29 +51,34 @@ export class DummyConsole implements ConsoleInterface {
 
 export class DummyClient implements ClientInterface {
   public sink: { [key: string]: any[] } = {};
-  public sequenceToken: SequenceToken | null = null;
+  public sequenceToken: string | null = null;
 
-  public createLogStream(
-    params: CloudWatchLogs.CreateLogStreamRequest,
-    callback?: (err: DummyAWSError, data: {}) => void
-  ): any {
-    this.sink[`${params.logGroupName}/${params.logStreamName}`] = [];
-    callback && callback(undefined as any, {});
-  }
+  public async send(
+    command: CreateLogStreamCommand
+  ): Promise<CreateLogStreamCommandOutput>;
+  public async send(
+    command: PutLogEventsCommand
+  ): Promise<PutLogEventsCommandOutput>;
+  public async send(
+    command: CreateLogStreamCommand | PutLogEventsCommand
+  ): Promise<CreateLogStreamCommandOutput | PutLogEventsCommandOutput> {
+    if (command instanceof CreateLogStreamCommand) {
+      this.sink[
+        `${command.input.logGroupName}/${command.input.logStreamName}`
+      ] = [];
+      return { $metadata: {} };
+    }
 
-  public putLogEvents(
-    params: CloudWatchLogs.PutLogEventsRequest,
-    callback?: (
-      err: DummyAWSError,
-      data: CloudWatchLogs.PutLogEventsResponse
-    ) => void
-  ): any {
-    this.sink[`${params.logGroupName}/${params.logStreamName}`].push(
-      ...params.logEvents
-    );
-    this.sequenceToken = `${params.sequenceToken || `SEQUENCE_TOKEN_`}#`;
-    callback &&
-      callback(undefined as any, { nextSequenceToken: this.sequenceToken });
+    if (command instanceof PutLogEventsCommand) {
+      this.sink[
+        `${command.input.logGroupName}/${command.input.logStreamName}`
+      ].push(...(command.input.logEvents ?? []));
+      this.sequenceToken = `${command.input.sequenceToken ||
+        `SEQUENCE_TOKEN_`}#`;
+      return { nextSequenceToken: this.sequenceToken, $metadata: {} };
+    }
+
+    throw new Error("Unsupported stub command");
   }
 }
 
@@ -89,16 +99,11 @@ export class DummyEventTarget implements EventTarget {
 }
 
 export class DummyAWSError extends Error implements AWSError {
-  constructor(message: string, public code: string) {
+  constructor(
+    message: string,
+    public name: string,
+    public expectedSequenceToken?: string
+  ) {
     super(message);
   }
-  public retryable = false;
-  public statusCode = 200;
-  public time: Date = new Date();
-  public hostname = "localhost";
-  public region = "ap-northeast-1";
-  public retryDelay = 0;
-  public requestId = "xxx";
-  public extendedRequestId = "xxx";
-  public cfId = "xxx";
 }

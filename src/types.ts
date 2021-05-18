@@ -1,10 +1,7 @@
 import {
-  ClientConfiguration,
-  CreateLogStreamRequest,
-  PutLogEventsRequest,
-  PutLogEventsResponse
-} from "aws-sdk/clients/cloudwatchlogs";
-import { AWSError, Request } from "aws-sdk";
+  CloudWatchLogsClient,
+  CloudWatchLogsClientConfig
+} from "@aws-sdk/client-cloudwatch-logs";
 
 // Resolve logStreamName for current user (e.g. Canvas Fingerprint)
 export interface LogStreamNameResolver {
@@ -50,15 +47,14 @@ export interface StorageInterface {
 
 // AWS CloudWatchLogs Client compatible interface
 export interface ClientConstructor {
-  new (options: ClientConfiguration): ClientInterface;
+  new (options: CloudWatchLogsClientConfig): ClientInterface;
 }
 export interface ClientInterface {
-  createLogStream(
-    params: CreateLogStreamRequest,
-    callback?: (err: AWSError, data: {}) => void
-  ): Request<{}, AWSError>;
-  putLogEvents(
-    params: PutLogEventsRequest,
-    callback?: (err: AWSError, data: PutLogEventsResponse) => void
-  ): Request<PutLogEventsResponse, AWSError>;
+  send: CloudWatchLogsClient["send"];
+}
+
+export interface AWSError extends Error {
+  name: string;
+  message: string;
+  expectedSequenceToken?: string;
 }
