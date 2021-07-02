@@ -1,4 +1,4 @@
-import Logger from "./Logger";
+import Logger from "./logger";
 
 export { Logger };
 export default Logger;
