@@ -2,8 +2,8 @@ import {
   CloudWatchLogsClient,
   CreateLogStreamCommand,
   InputLogEvent,
-  PutLogEventsCommand
-} from "@aws-sdk/client-cloudwatch-logs";
+  PutLogEventsCommand,
+} from '@aws-sdk/client-cloudwatch-logs';
 import {
   Level,
   StorageInterface,
@@ -13,14 +13,14 @@ import {
   InstallOptions,
   ErrorInfo,
   AWSError,
-  ClientInterface
-} from "./types";
+  ClientInterface,
+} from './types';
 
 export default class Logger {
-  protected static readonly namespace: string = "CloudWatchFrontLogger";
-  protected static readonly defaultLogStreamName: string = "anonymous";
+  protected static readonly namespace: string = 'CloudWatchFrontLogger';
+  protected static readonly defaultLogStreamName: string = 'anonymous';
 
-  protected levels: Level[] = ["error"];
+  protected levels: Level[] = ['error'];
   protected interval = 10000;
   protected muting = false;
   protected enabled = true;
@@ -117,26 +117,26 @@ export default class Logger {
     ClientConstructor: Ctor = CloudWatchLogsClient,
     storage = localStorage,
     console: globalConsole = console,
-    eventTarget = window
+    eventTarget = window,
   }: InstallOptions = {}): void {
     this.client = new Ctor({
       credentials: {
         accessKeyId: this.accessKeyId,
-        secretAccessKey: this.secretAccessKey
+        secretAccessKey: this.secretAccessKey,
       },
-      region: this.region
+      region: this.region,
     });
     this.logStreamNameResolver = logStreamNameResolver;
     this.messageFormatter = messageFormatter;
     this.storage = storage;
 
     // Swap window.console.*() functions and overridden ones
-    const originalConsole: ConsoleInterface = {} as any;
+    const originalConsole = {} as ConsoleInterface;
     for (const level of this.levels) {
       originalConsole[level] = globalConsole[level].bind(globalConsole);
       globalConsole[level] = async (message, ...args): Promise<void> => {
         // Listen overridden console.*() function calls (type="console", level="*")
-        await this.onError(new Error(message), { type: "console", level });
+        await this.onError(new Error(message), { type: 'console', level });
         if (!this.muting) {
           originalConsole[level](message, ...args);
         }
@@ -146,9 +146,9 @@ export default class Logger {
 
     // Listen "error" event on window (type="uncaught")
     eventTarget.addEventListener(
-      "error",
-      async (error: any): Promise<void> => {
-        await this.onError(error, { type: "uncaught" });
+      'error',
+      async (error: unknown): Promise<void> => {
+        await this.onError(error, { type: 'uncaught' });
       }
     );
 
@@ -162,7 +162,7 @@ export default class Logger {
    * @param e    - Error object
    * @param info - Extra Error Info (Consider using "type" field)
    */
-  public async onError(e: any, info?: ErrorInfo): Promise<void> {
+  public async onError(e: unknown, info?: ErrorInfo): Promise<void> {
     if (!Logger.isValidError(e) || !this.enabled) {
       return;
     }
@@ -178,7 +178,7 @@ export default class Logger {
 
     this.events.push({
       timestamp: new Date().getTime(),
-      message
+      message,
     });
   }
 
@@ -203,7 +203,7 @@ export default class Logger {
     }
 
     // Retrieve previous "nextSequenceToken" from cache
-    const sequenceToken = await this.getCache("sequenceToken");
+    const sequenceToken = await this.getCache('sequenceToken');
 
     // Build parameters for PutLogEvents endpoint
     //   c.f. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
@@ -211,7 +211,7 @@ export default class Logger {
       logEvents: pendingEvents,
       logGroupName: this.logGroupName,
       logStreamName: logStreamName,
-      ...(sequenceToken ? { sequenceToken } : undefined)
+      ...(sequenceToken ? { sequenceToken } : undefined),
     });
 
     let nextSequenceToken: string | undefined = undefined;
@@ -226,8 +226,8 @@ export default class Logger {
       // Try to recover from InvalidSequenceTokenException error message
       if (
         !Logger.isValidError<AWSError>(e) ||
-        (e.name !== "DataAlreadyAcceptedException" &&
-          e.name !== "InvalidSequenceTokenException") ||
+        (e.name !== 'DataAlreadyAcceptedException' &&
+          e.name !== 'InvalidSequenceTokenException') ||
         !e.expectedSequenceToken
       ) {
         // Print error to original console and reset states
@@ -237,12 +237,12 @@ export default class Logger {
       }
       // Recover from InvalidSequenceTokenException error message
       nextSequenceToken = e.expectedSequenceToken;
-      needsRetry = e.name !== "DataAlreadyAcceptedException";
+      needsRetry = e.name !== 'DataAlreadyAcceptedException';
     }
 
     // Cache fresh "nextSequenceToken"
     if (nextSequenceToken) {
-      await this.setCache("sequenceToken", nextSequenceToken);
+      await this.setCache('sequenceToken', nextSequenceToken);
     }
 
     // Immediately retry after recovery
@@ -254,21 +254,21 @@ export default class Logger {
 
   protected getClient(): ClientInterface {
     if (!this.client) {
-      throw new Error("Not yet installed");
+      throw new Error('Not yet installed');
     }
     return this.client;
   }
 
   protected getStorage(): StorageInterface {
     if (!this.storage) {
-      throw new Error("Not yet installed");
+      throw new Error('Not yet installed');
     }
     return this.storage;
   }
 
   protected getConsole(): ConsoleInterface {
     if (!this.console) {
-      throw new Error("Not yet installed");
+      throw new Error('Not yet installed');
     }
     return this.console;
   }
@@ -286,14 +286,14 @@ export default class Logger {
   }
 
   protected async refresh(): Promise<void> {
-    await this.deleteCache("logStreamName");
-    await this.deleteCache("sequenceToken");
+    await this.deleteCache('logStreamName');
+    await this.deleteCache('sequenceToken');
     this.events.splice(0);
   }
 
   protected async getLogStreamName(): Promise<string | null> {
     // Retrieve "logStreamName" for current user
-    const retrieved = await this.getCache("logStreamName");
+    const retrieved = await this.getCache('logStreamName');
     if (retrieved) {
       return retrieved;
     }
@@ -305,7 +305,7 @@ export default class Logger {
       Logger.defaultLogStreamName; // "anonymous"
     const createLogStreamCommand = new CreateLogStreamCommand({
       logGroupName: this.logGroupName,
-      logStreamName
+      logStreamName,
     });
 
     try {
@@ -315,7 +315,7 @@ export default class Logger {
       // Try to recover from ResourceAlreadyExistsException error
       if (
         !Logger.isValidError<AWSError>(e) ||
-        e.name !== "ResourceAlreadyExistsException"
+        e.name !== 'ResourceAlreadyExistsException'
       ) {
         // Print error to original console and reset states
         this.getConsole().error(e);
@@ -325,11 +325,11 @@ export default class Logger {
     }
 
     // Cache fresh "logStreamName"
-    await this.setCache("logStreamName", logStreamName);
+    await this.setCache('logStreamName', logStreamName);
     return logStreamName;
   }
 
-  protected static isValidError<E = Error>(value: any): value is E {
-    return value && typeof value.message === "string";
+  protected static isValidError<E = Error>(value: unknown): value is E {
+    return Boolean(value && typeof (value as Error).message === 'string');
   }
 }

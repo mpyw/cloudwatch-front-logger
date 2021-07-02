@@ -3,14 +3,14 @@ import {
   ConsoleInterface,
   Level,
   AWSError,
-  ClientInterface
-} from "../src/types";
+  ClientInterface,
+} from '../src/';
 import {
   CreateLogStreamCommand,
   PutLogEventsCommandOutput,
   PutLogEventsCommand,
-  CreateLogStreamCommandOutput
-} from "@aws-sdk/client-cloudwatch-logs";
+  CreateLogStreamCommandOutput,
+} from '@aws-sdk/client-cloudwatch-logs';
 
 export class DummyStorage implements StorageInterface {
   public storage: { [key: string]: string } = {};
@@ -26,26 +26,26 @@ export class DummyStorage implements StorageInterface {
 }
 
 export interface DummyConsoleMessage {
-  message: string;
+  message: unknown;
   level: Level;
 }
 
 export class DummyConsole implements ConsoleInterface {
   public messages: DummyConsoleMessage[] = [];
-  public debug(message?: any): void {
-    this.messages.push({ message, level: "debug" });
+  public debug(message?: unknown): void {
+    this.messages.push({ message, level: 'debug' });
   }
-  public info(message?: any): void {
-    this.messages.push({ message, level: "info" });
+  public info(message?: unknown): void {
+    this.messages.push({ message, level: 'info' });
   }
-  public log(message?: any): void {
-    this.messages.push({ message, level: "log" });
+  public log(message?: unknown): void {
+    this.messages.push({ message, level: 'log' });
   }
-  public error(message?: any): void {
-    this.messages.push({ message, level: "error" });
+  public error(message?: unknown): void {
+    this.messages.push({ message, level: 'error' });
   }
-  public warn(message?: any): void {
-    this.messages.push({ message, level: "warn" });
+  public warn(message?: unknown): void {
+    this.messages.push({ message, level: 'warn' });
   }
 }
 
@@ -73,12 +73,13 @@ export class DummyClient implements ClientInterface {
       this.sink[
         `${command.input.logGroupName}/${command.input.logStreamName}`
       ].push(...(command.input.logEvents ?? []));
-      this.sequenceToken = `${command.input.sequenceToken ||
-        `SEQUENCE_TOKEN_`}#`;
+      this.sequenceToken = `${
+        command.input.sequenceToken || `SEQUENCE_TOKEN_`
+      }#`;
       return { nextSequenceToken: this.sequenceToken, $metadata: {} };
     }
 
-    throw new Error("Unsupported stub command");
+    throw new Error('Unsupported stub command');
   }
 }
 

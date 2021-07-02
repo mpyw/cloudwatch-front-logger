@@ -1,7 +1,7 @@
 import {
   CloudWatchLogsClient,
-  CloudWatchLogsClientConfig
-} from "@aws-sdk/client-cloudwatch-logs";
+  CloudWatchLogsClientConfig,
+} from '@aws-sdk/client-cloudwatch-logs';
 
 // Resolve logStreamName for current user (e.g. Canvas Fingerprint)
 export interface LogStreamNameResolver {
@@ -27,7 +27,7 @@ export interface InstallOptions {
 }
 
 // Valid Error Levels
-export type Level = "debug" | "info" | "log" | "warn" | "error";
+export type Level = 'debug' | 'info' | 'log' | 'warn' | 'error';
 
 // window.Console compatible interface
 export interface ConsoleInterface {
@@ -50,7 +50,7 @@ export interface ClientConstructor {
   new (options: CloudWatchLogsClientConfig): ClientInterface;
 }
 export interface ClientInterface {
-  send: CloudWatchLogsClient["send"];
+  send: CloudWatchLogsClient['send'];
 }
 
 export interface AWSError extends Error {
