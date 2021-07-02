@@ -13,7 +13,8 @@
     "browser"
   ],
   "dependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.10.0"
+    "@aws-sdk/client-cloudwatch-logs": "^3.10.0",
+    "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@types/jest": "^26.0.23",
