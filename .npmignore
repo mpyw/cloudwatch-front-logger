@@ -1,5 +1,7 @@
+/.*
 /*
 !/src/
 !/es/
 !/lib/
-!/types/
+!/dist/
+!/typings/
