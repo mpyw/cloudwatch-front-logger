@@ -31,7 +31,7 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "lint:eslint": "eslint {src,test}/**/*.ts *.config.js",
+    "lint:eslint": "eslint {src,tests}/**/*.ts *.config.js",
     "lint:prettier": "prettier ./src ./tests *.config.js --list-different",
     "lint": "npm run lint:eslint && npm run lint:prettier",
     "fix:eslint": "eslint {src,tests}/**/*.ts *.config.js",

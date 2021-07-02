@@ -1,4 +1,4 @@
-/**/node_modules/*
-/lib/*
-/es/*
-/typings/*
+/*
+!/src/
+!/tests/
+!/jest.config.js
