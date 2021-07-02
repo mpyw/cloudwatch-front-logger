@@ -330,6 +330,6 @@ export default class Logger {
   }
 
   protected static isValidError<E = Error>(value: unknown): value is E {
-    return Boolean(value && typeof (value as any).message === 'string');
+    return Boolean(value && typeof (value as Error).message === 'string');
   }
 }
