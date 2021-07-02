@@ -9,7 +9,7 @@ import {
   DummyEventTarget,
   DummyStorage
 } from "./stub";
-import { InstallOptions } from "../src/types";
+import { InstallOptions } from "../src";
 
 let logger: Logger;
 let globalConsole: DummyConsole;

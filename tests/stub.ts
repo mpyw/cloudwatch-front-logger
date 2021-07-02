@@ -4,7 +4,7 @@ import {
   Level,
   AWSError,
   ClientInterface
-} from "../src/types";
+} from "../src/";
 import {
   CreateLogStreamCommand,
   PutLogEventsCommandOutput,
