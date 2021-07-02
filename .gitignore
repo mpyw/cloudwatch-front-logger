@@ -2,7 +2,6 @@
 /lib/
 /es/
 /typings/
-/dist/
 /coverage/
 *.log
 package-lock.json
