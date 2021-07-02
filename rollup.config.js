@@ -26,6 +26,7 @@ const config = {
     }),
     isProd && terser(),
   ],
+  external: ['@aws-sdk/client-cloudwatch-logs']
 };
 
 export default config;
