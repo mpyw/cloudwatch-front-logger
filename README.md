@@ -2,6 +2,8 @@
 
 Save your browser console logs to AWS CloudWatch (Inspired by [agea/console-cloud-watch](https://github.com/agea/console-cloud-watch))
 
+- Demo: [mpyw/cloudwatch-front-logger-demo](https://github.com/mpyw/cloudwatch-front-logger-demo)
+
 ## Installing
 
 ```
