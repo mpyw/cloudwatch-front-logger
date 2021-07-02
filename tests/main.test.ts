@@ -16,7 +16,7 @@ let globalConsole: DummyConsole;
 let storage: DummyStorage;
 let eventTarget: DummyEventTarget;
 
-jest.useFakeTimers();
+jest.useFakeTimers('legacy');
 
 const install = (options: Partial<InstallOptions> = {}): void => {
   logger = new Logger("key", "secret", "ap-northeast-1", "example");
