@@ -13,14 +13,14 @@ import {
 } from '@aws-sdk/client-cloudwatch-logs';
 
 export class DummyStorage implements StorageInterface {
-  public storage: { [key: string]: string } = {};
-  public getItem(key: string): string | null {
+  storage: { [key: string]: string } = {};
+  getItem(key: string): string | null {
     return this.storage[key] || null;
   }
-  public removeItem(key: string): void {
+  removeItem(key: string): void {
     delete this.storage[key];
   }
-  public setItem(key: string, value: string): void {
+  setItem(key: string, value: string): void {
     this.storage[key] = value;
   }
 }
@@ -31,35 +31,33 @@ export interface DummyConsoleMessage {
 }
 
 export class DummyConsole implements ConsoleInterface {
-  public messages: DummyConsoleMessage[] = [];
-  public debug(message?: unknown): void {
+  messages: DummyConsoleMessage[] = [];
+  debug(message?: unknown): void {
     this.messages.push({ message, level: 'debug' });
   }
-  public info(message?: unknown): void {
+  info(message?: unknown): void {
     this.messages.push({ message, level: 'info' });
   }
-  public log(message?: unknown): void {
+  log(message?: unknown): void {
     this.messages.push({ message, level: 'log' });
   }
-  public error(message?: unknown): void {
+  error(message?: unknown): void {
     this.messages.push({ message, level: 'error' });
   }
-  public warn(message?: unknown): void {
+  warn(message?: unknown): void {
     this.messages.push({ message, level: 'warn' });
   }
 }
 
 export class DummyClient implements ClientInterface {
-  public sink: { [key: string]: any[] } = {};
-  public sequenceToken: string | null = null;
+  sink: { [key: string]: any[] } = {};
+  sequenceToken: string | null = null;
 
-  public async send(
+  async send(
     command: CreateLogStreamCommand
   ): Promise<CreateLogStreamCommandOutput>;
-  public async send(
-    command: PutLogEventsCommand
-  ): Promise<PutLogEventsCommandOutput>;
-  public async send(
+  async send(command: PutLogEventsCommand): Promise<PutLogEventsCommandOutput>;
+  async send(
     command: CreateLogStreamCommand | PutLogEventsCommand
   ): Promise<CreateLogStreamCommandOutput | PutLogEventsCommandOutput> {
     if (command instanceof CreateLogStreamCommand) {
@@ -84,7 +82,7 @@ export class DummyClient implements ClientInterface {
 }
 
 export class DummyEventTarget implements EventTarget {
-  public listeners: { [key: string]: EventListener } = {};
+  listeners: { [key: string]: EventListener } = {};
 
   addEventListener(type: string, listener: EventListener): void {
     this.listeners[type] = listener;
