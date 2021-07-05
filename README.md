@@ -76,11 +76,13 @@ If you wish allocating a unique stream for each user, you can use a method such 
 Pass a resolver function as **`logStreamNameResolver`** option value on `install()` call.
 
 ```js
-import Fingerprint2 from 'fingerprintjs2'
+import FingerprintJS from 'fingerprintjs'
 
 logger.install({
-  logStreamNameResolver() {
-    return new Promise((resolve) => new Fingerprint2().get(resolve))
+  async logStreamNameResolver() {
+    const fp = await FingerprintJS.load()
+    const { visitorId } = await fp.get()
+    return visitorId
   },
 })
 ```
