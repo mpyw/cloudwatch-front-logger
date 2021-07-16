@@ -1,6 +1,12 @@
-import { PutLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
-import { advanceTo } from 'jest-date-mock';
-import { Logger } from '../src';
+// import { PutLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
+import {
+  ChannelFactory,
+  CollectorFactory,
+  SourceFactory,
+  Environment,
+  Installer,
+  Logger,
+} from '../src';
 
 import {
   DummyAWSError,
@@ -9,55 +15,63 @@ import {
   DummyEventTarget,
   DummyStorage,
 } from './stub';
-import { InstallOptions } from '../src';
 
 let logger: Logger;
-let globalConsole: DummyConsole;
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 let storage: DummyStorage;
+let globalConsole: DummyConsole;
 let eventTarget: DummyEventTarget;
+const originalDateConstructor = Date;
 
-jest.useFakeTimers('legacy');
-
-const install = (options: Partial<InstallOptions> = {}): void => {
-  logger = new Logger('key', 'secret', 'ap-northeast-1', 'example');
-  logger.install({
-    ClientConstructor: DummyClient,
-    console: (globalConsole = new DummyConsole()),
-    storage: (storage = new DummyStorage()),
-    eventTarget: (eventTarget = new DummyEventTarget()),
-    logStreamNameResolver: () => 'abc123',
-    ...options,
-  });
-  advanceTo(0);
+const freezeDate = (at: number): void => {
+  const date = new originalDateConstructor(at);
+  jest
+    .spyOn(global, 'Date')
+    .mockImplementation(() => date as unknown as string);
 };
 
-beforeEach(() => install());
-
-describe('Cache storage', (): void => {
-  it('should store with prefixed key', async (): Promise<void> => {
-    await (logger as any).setCache('key', 'value');
-    expect(storage.storage['CloudWatchFrontLogger:key']).toBe('value');
+const install = (): Logger => {
+  const environment = new Environment({
+    storage: (storage = new DummyStorage()),
+    console: (globalConsole = new DummyConsole()),
+    eventTarget: (eventTarget = new DummyEventTarget()),
   });
-
-  it('should retrieve value', async (): Promise<void> => {
-    await (logger as any).setCache('key', 'value');
-    expect(await (logger as any).getCache('key')).toBe('value');
+  const channelFactory = new ChannelFactory({
+    client: new DummyClient(),
+    logGroupName: 'group',
   });
+  const sourceFactory = new SourceFactory();
+  return new Installer(environment).install(
+    new CollectorFactory().createCollector(
+      channelFactory.createChannel('app'),
+      sourceFactory.createSources(['warn', 'error'])
+    )
+  );
+};
 
-  it('should unset value', async (): Promise<void> => {
-    await (logger as any).setCache('key', 'value');
-    expect(await (logger as any).deleteCache('key')).toBeUndefined();
-  });
+beforeEach(() => {
+  jest.useFakeTimers();
+  freezeDate(0);
+  logger = install();
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+  global.Date = originalDateConstructor;
 });
 
 describe('Collecting errors', (): void => {
   it('should receive from uncaught', async (): Promise<void> => {
-    await eventTarget.listeners.error(new Error('Something went wrong') as any);
-    expect((logger as any).events).toStrictEqual([
+    await eventTarget.listeners.error({
+      error: new Error('Something went wrong'),
+    } as unknown as ErrorEvent);
+    expect(logger.sources.items[0].events).toHaveLength(0);
+    expect(logger.sources.items[1].events).toStrictEqual([
       {
         message: JSON.stringify({
-          message: 'Something went wrong',
           type: 'uncaught',
+          message: 'Error: Something went wrong',
         }),
         timestamp: 0,
       },
@@ -65,13 +79,26 @@ describe('Collecting errors', (): void => {
   });
 
   it('should receive from console', async (): Promise<void> => {
-    await globalConsole.error(new Error('Something went wrong') as any);
-    expect((logger as any).events).toStrictEqual([
+    await globalConsole.error(new Error('Something went wrong'));
+    await globalConsole.warn('Something got worse');
+    expect(logger.sources.items[0].events).toStrictEqual([
       {
         message: JSON.stringify({
-          message: 'Error: Something went wrong',
           type: 'console',
+          message: 'Something got worse',
+          level: 'warn',
+          params: [],
+        }),
+        timestamp: 0,
+      },
+    ]);
+    expect(logger.sources.items[1].events).toStrictEqual([
+      {
+        message: JSON.stringify({
+          type: 'console',
+          message: 'Error: Something went wrong',
           level: 'error',
+          params: [],
         }),
         timestamp: 0,
       },
@@ -79,42 +106,36 @@ describe('Collecting errors', (): void => {
   });
 
   it('should receive from custom trigger', async (): Promise<void> => {
-    await logger.onError(new Error('Something went wrong'), { type: 'custom' });
-    expect((logger as any).events).toStrictEqual([
+    await logger.notify('error', new Error('Something went wrong'));
+    await logger.notify('warn', 'Something got worse');
+    expect(logger.sources.items[0].events).toStrictEqual([
       {
         message: JSON.stringify({
-          message: 'Something went wrong',
           type: 'custom',
+          message: 'Something got worse',
+          level: 'warn',
+          params: [],
+        }),
+        timestamp: 0,
+      },
+    ]);
+    expect(logger.sources.items[1].events).toStrictEqual([
+      {
+        message: JSON.stringify({
+          type: 'custom',
+          message: 'Error: Something went wrong',
+          level: 'error',
+          params: [],
         }),
         timestamp: 0,
       },
     ]);
   });
-
-  it('should use custom formatter', async (): Promise<void> => {
-    install({
-      messageFormatter: (e, info) =>
-        `[ERROR] ${e.message} <type=${info ? info.type : ''}>`,
-    });
-    await logger.onError(new Error('Something went wrong'), { type: 'custom' });
-    expect((logger as any).events).toStrictEqual([
-      {
-        message: '[ERROR] Something went wrong <type=custom>',
-        timestamp: 0,
-      },
-    ]);
-  });
-
-  it('should halt when disabled', async (): Promise<void> => {
-    logger.disable();
-    await logger.onError(new Error('Something went wrong'));
-    expect((logger as any).events).toStrictEqual([]);
-  });
 });
 
 describe('Creating logStream', (): void => {
   it('should create new logStream', async (): Promise<void> => {
-    const name = await (logger as any).getLogStreamName();
+    const name = await logger.getLogStreamName();
     expect(name).toBe('abc123');
     expect(await storage.getItem('CloudWatchFrontLogger:logStreamName')).toBe(
       'abc123'
