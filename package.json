@@ -17,18 +17,19 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.23",
-    "@types/node": "^15.14.0",
-    "@typescript-eslint/eslint-plugin": "^4.28.1",
-    "@typescript-eslint/parser": "^4.28.1",
-    "eslint": "^7.29.0",
+    "@types/jest": "^27.0.2",
+    "@types/node": "^16.10.9",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^8.0.1",
     "eslint-config-prettier": "^8.3.0",
-    "jest": "^27.0.6",
+    "event-target-shim": "^6.0.2",
+    "jest": "^27.2.5",
     "jest-date-mock": "^1.0.8",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.3.2",
-    "ts-jest": "^27.0.3",
-    "typescript": "^4.3.5"
+    "prettier": "^2.4.1",
+    "ts-jest": "^27.0.5",
+    "typescript": "^4.4.4"
   },
   "scripts": {
     "check": "tsc --noEmit",
