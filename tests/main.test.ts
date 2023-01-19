@@ -16,7 +16,9 @@ let globalConsole: DummyConsole;
 let storage: DummyStorage;
 let eventTarget: DummyEventTarget;
 
-jest.useFakeTimers('legacy');
+jest.useFakeTimers({
+  legacyFakeTimers: true,
+});
 
 const install = (options: Partial<InstallOptions> = {}): void => {
   logger = new Logger('key', 'secret', 'ap-northeast-1', 'example');
@@ -70,6 +72,20 @@ describe('Collecting errors', (): void => {
       {
         message: JSON.stringify({
           message: 'Error: Something went wrong',
+          type: 'console',
+          level: 'error',
+        }),
+        timestamp: 0,
+      },
+    ]);
+  });
+
+  it('should receive from console with args', async (): Promise<void> => {
+    await globalConsole.error({ a: 1 }, { b: 2 }, ['a'], 'b');
+    expect((logger as any).events).toStrictEqual([
+      {
+        message: JSON.stringify({
+          message: '{"a":1} {"b":2} ["a"] b',
           type: 'console',
           level: 'error',
         }),

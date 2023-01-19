@@ -28,24 +28,45 @@ export class DummyStorage implements StorageInterface {
 export interface DummyConsoleMessage {
   message: unknown;
   level: Level;
+  args?: any[];
 }
 
 export class DummyConsole implements ConsoleInterface {
   public messages: DummyConsoleMessage[] = [];
-  public debug(message?: unknown): void {
-    this.messages.push({ message, level: 'debug' });
+  public debug(message?: unknown, ...optionalParams: any[]): void {
+    const msg: DummyConsoleMessage = { message, level: 'debug' };
+    if (optionalParams.length) {
+      msg.args = optionalParams;
+    }
+    this.messages.push(msg);
   }
-  public info(message?: unknown): void {
-    this.messages.push({ message, level: 'info' });
+  public info(message?: unknown, ...optionalParams: any[]): void {
+    const msg: DummyConsoleMessage = { message, level: 'info' };
+    if (optionalParams.length) {
+      msg.args = optionalParams;
+    }
+    this.messages.push(msg);
   }
-  public log(message?: unknown): void {
-    this.messages.push({ message, level: 'log' });
+  public log(message?: unknown, ...optionalParams: any[]): void {
+    const msg: DummyConsoleMessage = { message, level: 'log' };
+    if (optionalParams.length) {
+      msg.args = optionalParams;
+    }
+    this.messages.push(msg);
   }
-  public error(message?: unknown): void {
-    this.messages.push({ message, level: 'error' });
+  public error(message?: unknown, ...optionalParams: any[]): void {
+    const msg: DummyConsoleMessage = { message, level: 'error' };
+    if (optionalParams.length) {
+      msg.args = optionalParams;
+    }
+    this.messages.push(msg);
   }
-  public warn(message?: unknown): void {
-    this.messages.push({ message, level: 'warn' });
+  public warn(message?: unknown, ...optionalParams: any[]): void {
+    const msg: DummyConsoleMessage = { message, level: 'warn' };
+    if (optionalParams.length) {
+      msg.args = optionalParams;
+    }
+    this.messages.push(msg);
   }
 }
 
