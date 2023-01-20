@@ -102,6 +102,13 @@ export default class Logger {
   }
 
   /**
+   * Reset logStreamName for refresh from logStreamNameResolver.
+   */
+  public async resetLogStreamName(): Promise<void> {
+    await this.deleteCache('logStreamName');
+  }
+
+  /**
    * Bootstrap Logger.
    *
    * @param logStreamNameResolver - Resolve logStreamName for current user (e.g. Canvas Fingerprint)
